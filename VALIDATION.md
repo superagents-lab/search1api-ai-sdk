@@ -30,7 +30,7 @@ ESM/CommonJS loading on local Node.js 22.19.0.
 | 7.0.130 | 4.6.5 |
 
 The prepared CI additionally covers Node.js 18 (AI SDK 5), 22 (AI SDK 6), and
-24 (AI SDK 7). Remote CI has not run because the repository has not been created.
+24 (AI SDK 7). Remote CI results are tracked separately in GitHub Actions.
 
 ## Live Search1API smoke
 

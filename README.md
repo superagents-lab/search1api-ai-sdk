@@ -4,6 +4,10 @@ Add web search, news search, and webpage reading to an AI SDK agent. The tools
 use the official [`@search1api/client`](https://s1.dev/docs/integrations/sdks)
 for transport, retries, timeouts, and typed API errors.
 
+The first npm release is being prepared. Until it is published, install a local
+tarball as described under Development; the registry install command below will
+become available after publication.
+
 ## Install
 
 ```bash

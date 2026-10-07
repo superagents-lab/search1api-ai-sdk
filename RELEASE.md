@@ -2,8 +2,9 @@
 
 Issue: [FAT-1853](https://linear.app/fatwang2/issue/FAT-1853).
 
-The initial implementation is local. The npm package, GitHub repository, owned
-integration page, and Tools Registry entry are not published yet.
+The source repository is being published under the Search1API organization at
+`superagents-lab/search1api-ai-sdk`. The npm package, owned integration page, and
+Tools Registry entry are not published yet.
 
 ## Release order
 
