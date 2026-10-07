@@ -1,6 +1,6 @@
 {
   "name": "@search1api/ai-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official Search1API web search, news, and page reading tools for the Vercel AI SDK.",
   "license": "MIT",
   "type": "module",
@@ -14,17 +14,36 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/superagents-lab/search1api-ai-sdk.git"
   },
   "homepage": "https://s1.dev",
-  "bugs": { "url": "https://github.com/superagents-lab/search1api-ai-sdk/issues" },
-  "keywords": ["search1api", "ai-sdk", "vercel", "tools", "web-search", "crawl", "news", "agents"],
-  "publishConfig": { "access": "public" },
+  "bugs": {
+    "url": "https://github.com/superagents-lab/search1api-ai-sdk/issues"
+  },
+  "keywords": [
+    "search1api",
+    "ai-sdk",
+    "vercel",
+    "tools",
+    "web-search",
+    "crawl",
+    "news",
+    "agents"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node scripts/build.mjs && tsc -p tsconfig.build.json",
     "test": "vitest run",
@@ -33,7 +52,9 @@
     "typecheck": "tsc --noEmit",
     "prepack": "npm run build"
   },
-  "dependencies": { "@search1api/client": "^0.2.1" },
+  "dependencies": {
+    "@search1api/client": "^0.2.1"
+  },
   "peerDependencies": {
     "ai": "^5.0.0 || ^6.0.0 || ^7.0.0",
     "zod": "^3.25.76 || ^4.1.8"

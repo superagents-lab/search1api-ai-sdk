@@ -128,6 +128,9 @@ npm run test:compatibility
 npm pack --dry-run
 ```
 
+To verify the current version from the public registry, run
+`node scripts/verify-package.mjs --registry` after publication.
+
 To validate a local build, create and install the tarball with
 `npm pack` and `npm install /absolute/path/search1api-ai-sdk-0.1.0.tgz`.
 Publication tracking is in [RELEASE.md](https://github.com/superagents-lab/search1api-ai-sdk/blob/main/RELEASE.md).

@@ -8,8 +8,10 @@ const directory = await mkdtemp(join(tmpdir(), 'search1api-ai-sdk-install-'));
 try {
   const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const tarball = resolve(`search1api-ai-sdk-${manifest.version}.tgz`);
+  const useRegistry = process.argv.includes('--registry');
+  const packageSource = useRegistry ? `${manifest.name}@${manifest.version}` : tarball;
   await writeFile(join(directory, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', tarball, 'ai@7', 'zod@4', 'typescript@5', '@types/node@22'], { cwd: directory, stdio: 'pipe' });
+  execFileSync('npm', ['install', '--no-audit', '--no-fund', packageSource, 'ai@7', 'zod@4', 'typescript@5', '@types/node@22'], { cwd: directory, stdio: 'pipe' });
   await writeFile(join(directory, 'consumer.mts'), `import { search1apiTools } from '@search1api/ai-sdk';
 const tools = search1apiTools({ only: ['search'] });
 void tools.search;
@@ -41,7 +43,7 @@ assert.deepEqual(Object.keys(require('@search1api/ai-sdk').search1apiTools()), [
 console.log('PASS fresh tarball install, ESM/CJS execution, and TypeScript consumers');
 `], { cwd: directory, encoding: 'utf8' });
   assert.match(output, /PASS/);
-  process.stdout.write(output);
+  process.stdout.write(useRegistry ? output.replace('tarball', 'public registry') : output);
 } finally {
   await rm(directory, { recursive: true, force: true });
 }

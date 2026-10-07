@@ -58,3 +58,12 @@ model call was tested.
 
 Owned pages are release drafts. Deploy only after the npm package and linked
 GitHub source are publicly available.
+
+## Registry and publishing setup
+
+- Version 0.1.0 is publicly installable from npm; a fresh project passed ESM/CJS
+  execution and `.mts`/`.cts` consumer checking using the registry package.
+- The npm organization is `search1api`; the publisher connection is saved for
+  `superagents-lab/search1api-ai-sdk` / `release.yml` / environment `npm`.
+- The publisher requires a first successful workflow publish to move from
+  Pending validation to Valid. Version 0.1.1 is prepared for that verification.
