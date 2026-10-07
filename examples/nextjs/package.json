@@ -1,0 +1,16 @@
+{
+  "name": "search1api-nextjs-example",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "next dev", "build": "next build --webpack", "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@search1api/ai-sdk": "file:../..",
+    "@ai-sdk/react": "^4.0.133",
+    "ai": "^7.0.130",
+    "next": "16.4.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": { "typescript": "^5.8.3", "@types/node": "^22.14.0", "@types/react": "^19.2.17", "@types/react-dom": "^19.1.2" }
+}
