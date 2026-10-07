@@ -10,8 +10,8 @@ pages and the Tools Registry entry are not published yet.
 
 The npm Trusted Publisher connection is saved for `superagents-lab/search1api-ai-sdk`,
 `release.yml`, environment `npm`, with `npm publish` permission. Its status is
-Pending validation until a workflow publish succeeds. The 0.1.1 release validates
-that connection after the initial package bootstrap.
+Valid after the successful 0.1.1 OIDC workflow publish. The npm publish log
+confirms a signed provenance statement from GitHub Actions.
 
 ## Release order
 
@@ -22,9 +22,11 @@ that connection after the initial package bootstrap.
    environment `npm`, and allowed action `npm publish`. Existing packages'
    trusted publishers do not authorize this package. The GitHub `npm`
    environment uses the same `fatwang2` review requirement as the JS SDK.
-4. Publish GitHub Release v0.1.1 to trigger verification and the npm publishing
-   job, then approve the `npm` environment and verify a fresh registry install.
+4. Complete: GitHub Release v0.1.1 triggered verification and the npm publishing
+   job; the user approved the `npm` environment and the workflow succeeded.
    Manual workflow dispatch runs verification only and never publishes.
+   npm accepted 0.1.1 for asynchronous processing; confirm it is publicly
+   installable with `node scripts/verify-package.mjs --registry` after processing.
 5. Deploy the docs and integration landing page only after the package is installable.
 6. Prepare an upstream `vercel/ai` Tools Registry contribution using the current
    registry instructions and the live owned page; request authorization for

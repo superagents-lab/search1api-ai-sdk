@@ -65,5 +65,9 @@ GitHub source are publicly available.
   execution and `.mts`/`.cts` consumer checking using the registry package.
 - The npm organization is `search1api`; the publisher connection is saved for
   `superagents-lab/search1api-ai-sdk` / `release.yml` / environment `npm`.
-- The publisher requires a first successful workflow publish to move from
-  Pending validation to Valid. Version 0.1.1 is prepared for that verification.
+- The 0.1.1 release workflow succeeded after the user approved the GitHub `npm`
+  environment. The publish log confirms a signed provenance statement, and the
+  npm publisher settings display Status: Valid.
+- npm accepted version 0.1.1 for asynchronous processing. Its public registry
+  availability and fresh installation still need confirmation; the completed
+  public-registry consumer check above used version 0.1.0.
