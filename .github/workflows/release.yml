@@ -2,29 +2,53 @@ name: Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
-    environment:
-      name: npm
-      url: https://www.npmjs.com/package/@search1api/ai-sdk
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Check release version
+        if: github.event_name == 'release'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: node -e "const p = require('./package.json'); if (process.env.RELEASE_TAG !== 'v' + p.version) throw new Error('Tag and package version differ');"
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
       - run: npm run test:smoke
       - run: npm pack --dry-run
-      - name: Check release version
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: node -e "const p = require('./package.json'); if (process.env.RELEASE_TAG !== 'v' + p.version) throw new Error('Tag and package version differ');"
-      - run: npm publish --provenance
+  publish:
+    needs: verify
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@search1api/ai-sdk
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm ci
+      - name: Publish package
+        run: |
+          PACKAGE_SPEC=$(node -p "const p = require('./package.json'); p.name + '@' + p.version")
+          if npm view "$PACKAGE_SPEC" version >/dev/null 2>&1; then
+            echo "$PACKAGE_SPEC is already published"
+          else
+            npm publish --provenance
+          fi
