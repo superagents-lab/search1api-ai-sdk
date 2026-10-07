@@ -4,10 +4,6 @@ Add web search, news search, and webpage reading to an AI SDK agent. The tools
 use the official [`@search1api/client`](https://s1.dev/docs/integrations/sdks)
 for transport, retries, timeouts, and typed API errors.
 
-The first npm release is being prepared. Until it is published, install a local
-tarball as described under Development; the registry install command below will
-become available after publication.
-
 ## Install
 
 ```bash
@@ -132,7 +128,7 @@ npm run test:compatibility
 npm pack --dry-run
 ```
 
-Before the first public release, build and install the local tarball with
+To validate a local build, create and install the tarball with
 `npm pack` and `npm install /absolute/path/search1api-ai-sdk-0.1.0.tgz`.
 Publication tracking is in [RELEASE.md](https://github.com/superagents-lab/search1api-ai-sdk/blob/main/RELEASE.md).
 

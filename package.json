@@ -21,7 +21,7 @@
     "type": "git",
     "url": "git+https://github.com/superagents-lab/search1api-ai-sdk.git"
   },
-  "homepage": "https://s1.dev/docs/integrations/vercel-ai-sdk",
+  "homepage": "https://s1.dev",
   "bugs": { "url": "https://github.com/superagents-lab/search1api-ai-sdk/issues" },
   "keywords": ["search1api", "ai-sdk", "vercel", "tools", "web-search", "crawl", "news", "agents"],
   "publishConfig": { "access": "public" },
