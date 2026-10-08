@@ -1,6 +1,6 @@
 {
   "name": "@search1api/ai-sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official Search1API web search, news, and page reading tools for the Vercel AI SDK.",
   "license": "MIT",
   "type": "module",

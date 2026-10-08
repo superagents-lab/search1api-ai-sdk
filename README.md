@@ -36,9 +36,18 @@ The tool set has three entries:
 
 | Tool | Model input | API | Output |
 | --- | --- | --- | --- |
-| `search` | `{ query }` | `/search` | Typed results with titles, links, and snippets |
-| `news` | `{ query }` | `/news` | Typed news results and source links |
+| `search` | `{ query, search_service?, max_results?, include_sites?, exclude_sites?, time_range? }` | `/search` | Typed results with titles, links, and snippets |
+| `news` | Same fields as `search`, with news engines | `/news` | Typed news results and source links |
 | `crawl` | `{ url }` | `/crawl` | A page's title, URL, and readable content |
+
+The model-facing parameters match the
+[Search1API MCP server](https://s1.dev/docs/integrations/mcp). The model can
+pick an engine (`google`, `bing`, `duckduckgo`, `yahoo`, `x`, `reddit`, `github`,
+`youtube`, `arxiv`, `wechat`, `bilibili`, `imdb`, `wikipedia`; news supports
+`google`, `bing`, `duckduckgo`, `yahoo`, and `hackernews`), return 1–50 results,
+scope or exclude domains, and limit results to the past day, month, or year.
+Result page crawling is not exposed to the model. Unknown arguments are ignored
+rather than failing the call.
 
 Outputs preserve the API response, including optional publication dates,
 metadata, and content. Empty results remain empty. Ask the model to cite the
@@ -46,9 +55,9 @@ returned links; these tools do not add AI SDK source events automatically.
 
 ## Configure one tool
 
-Applications control the engine, result count, domains, language, and time
-window. The model sees only the query or URL, so it cannot change those settings
-or enable extra result crawling.
+Settings passed in code are defaults. When the model supplies the same
+parameter, the model's value is used for that call; anything it omits falls
+back to your settings.
 
 ```ts
 import { search1apiSearch, search1apiCrawl } from '@search1api/ai-sdk';
@@ -72,8 +81,8 @@ const tools = search1apiTools({
 });
 ```
 
-Search and news default to five results with `crawlResults: 0`. Set
-`search.crawlResults` or `news.crawlResults` explicitly when you want result page
+Search and news default to ten results with `crawlResults: 0`. Set
+`search.crawlResults` or `news.crawlResults` in code when you want result page
 content included. Each successful page retrieval incurs a separate crawl charge;
 see [pricing](https://s1.dev/pricing).
 

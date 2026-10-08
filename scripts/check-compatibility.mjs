@@ -26,7 +26,7 @@ try {
         }
       }
       const versions = JSON.parse(await readFile(join(cwd, 'package-lock.json'), 'utf8'));
-      console.log(`PASS ai ${versions.packages['node_modules/ai'].version} / zod ${versions.packages['node_modules/zod'].version}: types, 15 tests, build, generation/streaming loop, ESM/CJS`);
+      console.log(`PASS ai ${versions.packages['node_modules/ai'].version} / zod ${versions.packages['node_modules/zod'].version}: types, unit tests, build, generation/streaming loop, ESM/CJS`);
     }
   }
 } finally {

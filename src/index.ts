@@ -18,12 +18,12 @@ export interface Search1APIToolOptions extends Search1APIOptions {
 }
 
 export interface Search1APISearchOptions extends Search1APIToolOptions {
-  /** Application-owned search settings; the model only supplies the query. */
+  /** Default search settings; values the model supplies take precedence. */
   search?: SearchOptions;
 }
 
 export interface Search1APINewsOptions extends Search1APIToolOptions {
-  /** Application-owned news settings; the model only supplies the query. */
+  /** Default news settings; values the model supplies take precedence. */
   news?: NewsOptions;
 }
 
@@ -31,31 +31,130 @@ export interface Search1APICrawlOptions extends Search1APIToolOptions {
   crawl?: CrawlOptions;
 }
 
-export type QueryInput = { query: string };
 export type CrawlInput = { url: string };
 
-const querySchema = z
-  .object({
+// Model-facing parameters mirror the Search1API MCP server's tool schemas,
+// except result crawling, which only application settings can enable.
+const SEARCH_ENGINES = [
+  'google',
+  'bing',
+  'duckduckgo',
+  'yahoo',
+  'x',
+  'reddit',
+  'github',
+  'youtube',
+  'arxiv',
+  'wechat',
+  'bilibili',
+  'imdb',
+  'wikipedia',
+] as const;
+const NEWS_ENGINES = [
+  'google',
+  'bing',
+  'duckduckgo',
+  'yahoo',
+  'hackernews',
+] as const;
+
+function queryFields(kind: 'search' | 'news') {
+  const noun = kind === 'search' ? 'results' : 'articles';
+  return {
     query: z
       .string()
       .trim()
       .min(1)
-      .describe('Search keywords or a specific question.'),
-  })
-  .strict();
+      .describe(`Short, focused ${kind} query`),
+    max_results: z
+      .number()
+      .int()
+      .min(1)
+      .max(50)
+      .optional()
+      .describe(`Maximum number of ${noun} to return`),
+    include_sites: z
+      .array(z.string())
+      .optional()
+      .describe(
+        kind === 'search'
+          ? 'Domains to include when the user explicitly scopes the search'
+          : 'News domains to include'
+      ),
+    exclude_sites: z
+      .array(z.string())
+      .optional()
+      .describe(
+        kind === 'search'
+          ? 'Domains to exclude from the search'
+          : 'News domains to exclude'
+      ),
+    time_range: z
+      .enum(['day', 'month', 'year'])
+      .optional()
+      .describe(
+        kind === 'search'
+          ? 'Optional recency window for time-sensitive searches'
+          : 'Optional recency window; use day for breaking news'
+      ),
+  };
+}
 
-const crawlSchema = z
-  .object({
-    url: z
-      .string()
-      .url()
-      .refine(
-        (url) => ['http:', 'https:'].includes(new URL(url).protocol),
-        'Use an HTTP or HTTPS URL.'
-      )
-      .describe('A public webpage URL, for example a link returned by search.'),
-  })
-  .strict();
+// Unknown keys are stripped rather than rejected so a stray argument does not
+// cost the agent a retry step.
+const searchSchema = z.object({
+  ...queryFields('search'),
+  search_service: z
+    .enum(SEARCH_ENGINES)
+    .optional()
+    .describe(
+      "Search engine to use; choose one only when it matches the user's source intent"
+    ),
+});
+
+const newsSchema = z.object({
+  ...queryFields('news'),
+  search_service: z
+    .enum(NEWS_ENGINES)
+    .optional()
+    .describe('News search engine to use'),
+});
+
+const crawlSchema = z.object({
+  url: z
+    .string()
+    .url()
+    .refine(
+      (url) => ['http:', 'https:'].includes(new URL(url).protocol),
+      'Use an HTTP or HTTPS URL.'
+    )
+    .describe('Public HTTP or HTTPS URL to retrieve'),
+});
+
+export type SearchInput = z.input<typeof searchSchema>;
+export type NewsInput = z.input<typeof newsSchema>;
+
+type ModelQueryInput =
+  | z.output<typeof searchSchema>
+  | z.output<typeof newsSchema>;
+
+// Merge model-supplied values over application defaults, dropping omitted keys.
+function requestOptions<Options extends SearchOptions | NewsOptions>(
+  defaults: Options,
+  input: ModelQueryInput
+): Options {
+  const fromModel = {
+    searchService: input.search_service,
+    maxResults: input.max_results,
+    includeSites: input.include_sites,
+    excludeSites: input.exclude_sites,
+    timeRange: input.time_range,
+  };
+  const overrides = Object.fromEntries(
+    Object.entries(fromModel).filter(([, value]) => value !== undefined)
+  );
+  return { ...defaults, ...overrides } as Options;
+}
 
 type ClientGetter = () => Search1API;
 
@@ -81,16 +180,24 @@ function clientGetter(options: Search1APIToolOptions): ClientGetter {
 function searchTool(
   getClient: ClientGetter,
   settings: SearchOptions = {}
-): Tool<QueryInput, SearchResponse> {
-  const options = { maxResults: 5, crawlResults: 0, ...settings };
+): Tool<SearchInput, SearchResponse> {
+  const defaults: SearchOptions = {
+    maxResults: 10,
+    crawlResults: 0,
+    ...settings,
+  };
   return tool({
     description:
-      'Search the public web for current information and sources. Returns titles, links, and snippets. Use crawl to read a result page in full.',
-    inputSchema: querySchema,
+      'Search the live public web when the user needs current information, sources, or research. Returns titles, links, and snippets. Use crawl to read a result page in full.',
+    inputSchema: searchSchema,
     execute: async (input, { abortSignal }) => {
       abortSignal?.throwIfAborted();
-      const { query } = querySchema.parse(input);
-      return getClient().search(query, options, { signal: abortSignal });
+      const parsed = searchSchema.parse(input);
+      return getClient().search(
+        parsed.query,
+        requestOptions(defaults, parsed),
+        { signal: abortSignal }
+      );
     },
   });
 }
@@ -98,16 +205,22 @@ function searchTool(
 function newsTool(
   getClient: ClientGetter,
   settings: NewsOptions = {}
-): Tool<QueryInput, NewsResponse> {
-  const options = { maxResults: 5, crawlResults: 0, ...settings };
+): Tool<NewsInput, NewsResponse> {
+  const defaults: NewsOptions = {
+    maxResults: 10,
+    crawlResults: 0,
+    ...settings,
+  };
   return tool({
     description:
-      'Search news coverage of recent events and announcements. Returns article titles, links, and snippets. Use crawl to read an article in full.',
-    inputSchema: querySchema,
+      'Search current news when the user asks about recent events, announcements, or coverage. Returns article titles, links, and snippets. Use crawl to read an article in full.',
+    inputSchema: newsSchema,
     execute: async (input, { abortSignal }) => {
       abortSignal?.throwIfAborted();
-      const { query } = querySchema.parse(input);
-      return getClient().news(query, options, { signal: abortSignal });
+      const parsed = newsSchema.parse(input);
+      return getClient().news(parsed.query, requestOptions(defaults, parsed), {
+        signal: abortSignal,
+      });
     },
   });
 }
@@ -131,13 +244,13 @@ function crawlTool(
 
 export function search1apiSearch(
   options: Search1APISearchOptions = {}
-): Tool<QueryInput, SearchResponse> {
+): Tool<SearchInput, SearchResponse> {
   return searchTool(clientGetter(options), options.search);
 }
 
 export function search1apiNews(
   options: Search1APINewsOptions = {}
-): Tool<QueryInput, NewsResponse> {
+): Tool<NewsInput, NewsResponse> {
   return newsTool(clientGetter(options), options.news);
 }
 
@@ -148,8 +261,8 @@ export function search1apiCrawl(
 }
 
 export interface Search1APIToolSet {
-  search: Tool<QueryInput, SearchResponse>;
-  news: Tool<QueryInput, NewsResponse>;
+  search: Tool<SearchInput, SearchResponse>;
+  news: Tool<NewsInput, NewsResponse>;
   crawl: Tool<CrawlInput, CrawlResponse>;
 }
 

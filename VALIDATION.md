@@ -71,3 +71,21 @@ GitHub source are publicly available.
 - npm accepted version 0.1.1 for asynchronous processing. Its public registry
   availability and fresh installation still need confirmation; the completed
   public-registry consumer check above used version 0.1.0.
+
+## 0.1.2: MCP-aligned model parameters
+
+Validated 2026-10-08 Asia/Shanghai against the local build before publication.
+
+- 17 unit tests, TypeScript checking, the mock-model smoke loop, and the AI SDK
+  5/6/7 x Zod 3/4 compatibility matrix passed.
+- Real runs with `crawl_results` exposed: `openai/gpt-5-mini` through AI
+  Gateway with `ai@7.0.133`, three agent runs, zero tool errors. The model chose
+  engines, `time_range`, and `max_results`, but set `crawl_results` to 2–3 on
+  every search (3–4 credits instead of 1), so 0.1.2 removes it from the model
+  input; applications can still set `crawlResults`.
+- Real runs with the packed 0.1.2 build, same setup: three agent runs, zero tool
+  errors, no `crawl_results` sent. The model chose `google`, `bing`, and
+  `github` engines, `max_results`, and `time_range`; runs finished in 3–9 steps.
+- Before the change, the strict 0.1.1 schema rejected model-invented arguments
+  (`max_results`, `page`, `crawl_results`, `include_sites`) in 2 of 7 runs,
+  costing the agent a retry step.

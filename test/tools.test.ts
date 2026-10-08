@@ -153,6 +153,68 @@ describe('Search1API tools', () => {
     ).toBe(2);
   });
 
+  it('maps model-supplied parameters over application defaults', async () => {
+    const fetch = transport();
+    const tools = search1apiTools({
+      apiKey: 'test-key',
+      fetch,
+      search: { searchService: 'bing', maxResults: 8, language: 'en' },
+    });
+    await execute(tools.search, {
+      query: 'AI SDK',
+      search_service: 'github',
+      max_results: 3,
+      include_sites: ['github.com'],
+      exclude_sites: ['example.com'],
+      time_range: 'month',
+    });
+    expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toEqual({
+      query: 'AI SDK',
+      search_service: 'github',
+      max_results: 3,
+      crawl_results: 0,
+      include_sites: ['github.com'],
+      exclude_sites: ['example.com'],
+      time_range: 'month',
+      language: 'en',
+    });
+    await execute(tools.news, {
+      query: 'release',
+      search_service: 'hackernews',
+      time_range: 'day',
+    });
+    expect(JSON.parse(fetch.mock.calls[1][1]?.body as string)).toEqual({
+      query: 'release',
+      search_service: 'hackernews',
+      max_results: 10,
+      crawl_results: 0,
+      time_range: 'day',
+    });
+  });
+
+  it('ignores unknown model arguments, including result crawling, instead of failing the tool call', async () => {
+    const fetch = transport();
+    const tools = search1apiTools({ apiKey: 'test-key', fetch });
+    await execute(tools.search, {
+      query: 'AI SDK',
+      crawl_results: 3,
+      page: 2,
+      image: true,
+    } as { query: string });
+    await execute(tools.crawl, {
+      url: 'https://ai-sdk.dev',
+      depth: 3,
+    } as { url: string });
+    expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toEqual({
+      query: 'AI SDK',
+      max_results: 10,
+      crawl_results: 0,
+    });
+    expect(JSON.parse(fetch.mock.calls[1][1]?.body as string)).toEqual({
+      url: 'https://ai-sdk.dev',
+    });
+  });
+
   it('maps news settings to /news', async () => {
     const fetch = transport();
     await execute(
@@ -227,14 +289,18 @@ describe('Search1API tools', () => {
     void selected.crawl;
   });
 
-  it('rejects blank queries, non-web URLs, and model-supplied application settings before any request', async () => {
+  it('rejects blank queries, out-of-range parameters, unsupported engines, and non-web URLs before any request', async () => {
     const fetch = transport();
     const tools = search1apiTools({ apiKey: 'test-key', fetch });
     await expect(execute(tools.search, { query: '  ' })).rejects.toThrow();
     await expect(
-      execute(tools.search, { query: 'AI SDK', crawlResults: 50 } as {
-        query: string;
-      })
+      execute(tools.search, { query: 'AI SDK', max_results: 51 })
+    ).rejects.toThrow();
+    await expect(
+      execute(tools.news, {
+        query: 'AI SDK',
+        search_service: 'github',
+      } as { query: string })
     ).rejects.toThrow();
     for (const url of ['invalid', 'file:///etc/passwd', 'ftp://example.com']) {
       await expect(execute(tools.crawl, { url })).rejects.toThrow();

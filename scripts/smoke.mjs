@@ -45,10 +45,10 @@ assert.equal(requests[0].body.crawl_results, 0);
 assert.match(JSON.stringify(model.doGenerateCalls[2].prompt), /input schemas and execute functions/);
 assert.deepEqual(model.doGenerateCalls[0].tools.map((tool) => tool.name), ['search', 'crawl']);
 
-// The AI SDK validates model input before invoking the tool transport.
+// The AI SDK validates out-of-range model input before invoking the tool transport.
 const invalidModel = new MockModel({ doGenerate: [{
   ...generatedStep(0),
-  content: [{ type: 'tool-call', toolCallId: 'invalid-1', toolName: 'search', input: JSON.stringify({ query: 'AI SDK', crawlResults: 50 }) }],
+  content: [{ type: 'tool-call', toolCallId: 'invalid-1', toolName: 'search', input: JSON.stringify({ query: 'AI SDK', max_results: 51 }) }],
 }] });
 const invalid = await generateText({ model: invalidModel, tools, prompt: 'Search' });
 assert.equal(requests.length, 2);
