@@ -6,6 +6,7 @@ import {
   Search1API,
   Search1APIConfigurationError,
 } from '@search1api/client';
+import type { AskResponse } from '@search1api/client';
 import type { Tool } from 'ai';
 import {
   search1apiAsk,
@@ -41,9 +42,10 @@ const crawlResponse = {
     content: 'Readable page content.',
   },
 };
-const askResponse = {
+const askResponse: AskResponse = {
+  query: 'What are developers saying about Bun 1.3 this month?',
   intent: {
-    keywords: 'bun 1.3',
+    search_query: 'Bun 1.3',
     sources: ['reddit', 'hackernews'],
     time_range: 'month',
   },
