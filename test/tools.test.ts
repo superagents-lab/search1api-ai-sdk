@@ -351,7 +351,12 @@ describe('Search1API tools', () => {
   });
 
   it('selects tools and rejects unknown names', () => {
-    expect(Object.keys(search1apiTools())).toEqual(['search', 'news', 'crawl']);
+    expect(Object.keys(search1apiTools())).toEqual([
+      'search',
+      'news',
+      'crawl',
+      'ask',
+    ]);
     expect(Object.keys(search1apiTools({ only: ['search', 'crawl'] }))).toEqual(
       ['search', 'crawl']
     );
@@ -367,7 +372,6 @@ describe('Search1API tools', () => {
     const selected = search1apiTools({ only: ['search'] });
     // @ts-expect-error Omitted tools are absent from the inferred type.
     void selected.crawl;
-    // @ts-expect-error ask is opt-in, so the default set does not include it.
     void search1apiTools().ask;
   });
 

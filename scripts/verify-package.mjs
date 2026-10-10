@@ -39,7 +39,7 @@ const response = { results: [{ title: 'Example', link: 'https://example.com', sn
 const tools = search1apiTools({ only: ['search'], apiKey: 'test-key', fetch: async () => Response.json(response) });
 assert.deepEqual(await tools.search.execute({ query: 'example' }, { toolCallId: '1', messages: [], context: {} }), response);
 const require = createRequire(import.meta.url);
-assert.deepEqual(Object.keys(require('@search1api/ai-sdk').search1apiTools()), ['search', 'news', 'crawl']);
+assert.deepEqual(Object.keys(require('@search1api/ai-sdk').search1apiTools()), ['search', 'news', 'crawl', 'ask']);
 console.log('PASS fresh tarball install, ESM/CJS execution, and TypeScript consumers');
 `], { cwd: directory, encoding: 'utf8' });
   assert.match(output, /PASS/);

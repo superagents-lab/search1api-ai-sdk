@@ -33,14 +33,14 @@ const result = await generateText({
 console.log(result.text);
 ```
 
-The default tool set has three entries, and `ask` can be added explicitly:
+The tool set has four entries:
 
 | Tool | Model input | API | Output |
 | --- | --- | --- | --- |
 | `search` | `{ query, search_service?, page?, max_results?, include_sites?, exclude_sites?, time_range? }` | `/search` | Typed results with titles, links, and snippets |
 | `news` | Same fields as `search` except `page`, with news engines | `/news` | Typed news results and source links |
 | `crawl` | `{ url }` | `/crawl` | A page's title, URL, and readable content |
-| `ask` (opt-in) | `{ query }` | `/ask` | Up to 10 results ranked by relevance, plus the engines and window used |
+| `ask` | `{ query }` | `/ask` | Up to 10 results ranked by relevance, plus the engines and window used |
 
 The model-facing parameters match the
 [Search1API MCP server](https://s1.dev/docs/integrations/mcp). The model can
@@ -65,14 +65,15 @@ them as "Powered by xAI"; see
 `ask` sends a natural-language request to
 [`POST /ask`](https://s1.dev/docs/basic/ask). Search1API chooses up to five
 engines and a time window, drops off-topic results, and returns at most 10
-results ranked by relevance. Each call costs 5 credits, so `ask` is not in the
-default tool set. Add it with `only` or `search1apiAsk()`:
+results ranked by relevance. Each call costs 5 credits, compared with 1 credit
+for `search`. `ask` is in the default tool set, matching the MCP server; leave
+it out with `only`, or create it on its own with `search1apiAsk()`:
 
 ```ts
 import { search1apiAsk, search1apiTools } from '@search1api/ai-sdk';
 
-const tools = search1apiTools({ only: ['ask', 'crawl'] });
-// or: const tools = { ask: search1apiAsk(), ...search1apiTools() };
+const withoutAsk = search1apiTools({ only: ['search', 'news', 'crawl'] });
+const askOnly = { ask: search1apiAsk() };
 ```
 
 The SDK gives `ask` a 45-second timeout. `ask` is not available with

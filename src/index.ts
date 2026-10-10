@@ -299,7 +299,7 @@ export function search1apiCrawl(
   return crawlTool(clientGetter(options), options.crawl);
 }
 
-/** Agentic search through `POST /ask`. Not part of the default tool set. */
+/** Agentic search through `POST /ask`. Costs 5 credits per call. */
 export function search1apiAsk(
   options: Search1APIToolOptions = {}
 ): Tool<AskInput, AskResponse> {
@@ -318,21 +318,15 @@ export type Search1APIToolName = keyof Search1APIToolSet;
 export interface Search1APIToolsOptions<
   Name extends Search1APIToolName = Search1APIToolName,
 > extends Search1APIToolOptions {
-  /**
-   * Include only these tools. By default `search`, `news`, and `crawl` are
-   * included; `ask` costs 5 credits per call and must be selected explicitly.
-   */
+  /** Include only these tools. By default all four are included. */
   only?: readonly Name[];
   search?: SearchOptions;
   news?: NewsOptions;
   crawl?: CrawlOptions;
 }
 
-const DEFAULT_TOOLS = ['search', 'news', 'crawl'] as const;
-type DefaultToolName = (typeof DEFAULT_TOOLS)[number];
-
 export function search1apiTools<
-  Name extends Search1APIToolName = DefaultToolName,
+  Name extends Search1APIToolName = Search1APIToolName,
 >(options: Search1APIToolsOptions<Name> = {}): Pick<Search1APIToolSet, Name> {
   const getClient = clientGetter(options);
   const tools: Search1APIToolSet = {
@@ -341,7 +335,8 @@ export function search1apiTools<
     crawl: crawlTool(getClient, options.crawl),
     ask: askTool(getClient),
   };
-  const names = options.only ?? DEFAULT_TOOLS;
+  const names =
+    options.only ?? (['search', 'news', 'crawl', 'ask'] as const);
   const selected = {} as Pick<Search1APIToolSet, Name>;
   for (const name of names) {
     if (!Object.hasOwn(tools, name)) {
