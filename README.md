@@ -1,8 +1,9 @@
 # Search1API tools for the Vercel AI SDK
 
-Add web search, news search, and webpage reading to an AI SDK agent. The tools
-use the official [`@search1api/client`](https://s1.dev/docs/integrations/sdks)
-for transport, retries, timeouts, and typed API errors.
+Add web search, news search, webpage reading, and agentic search to an AI SDK
+agent. The tools use the official
+[`@search1api/client`](https://s1.dev/docs/integrations/sdks) for transport,
+retries, timeouts, and typed API errors.
 
 ## Install
 
@@ -32,26 +33,51 @@ const result = await generateText({
 console.log(result.text);
 ```
 
-The tool set has three entries:
+The default tool set has three entries, and `ask` can be added explicitly:
 
 | Tool | Model input | API | Output |
 | --- | --- | --- | --- |
-| `search` | `{ query, search_service?, max_results?, include_sites?, exclude_sites?, time_range? }` | `/search` | Typed results with titles, links, and snippets |
-| `news` | Same fields as `search`, with news engines | `/news` | Typed news results and source links |
+| `search` | `{ query, search_service?, page?, max_results?, include_sites?, exclude_sites?, time_range? }` | `/search` | Typed results with titles, links, and snippets |
+| `news` | Same fields as `search` except `page`, with news engines | `/news` | Typed news results and source links |
 | `crawl` | `{ url }` | `/crawl` | A page's title, URL, and readable content |
+| `ask` (opt-in) | `{ query }` | `/ask` | Up to 10 results ranked by relevance, plus the engines and window used |
 
 The model-facing parameters match the
 [Search1API MCP server](https://s1.dev/docs/integrations/mcp). The model can
-pick an engine (`google`, `bing`, `duckduckgo`, `yahoo`, `x`, `reddit`, `github`,
-`youtube`, `arxiv`, `wechat`, `bilibili`, `imdb`, `wikipedia`; news supports
-`google`, `bing`, `duckduckgo`, `yahoo`, and `hackernews`), return 1–50 results,
-scope or exclude domains, and limit results to the past day, month, or year.
-Result page crawling is not exposed to the model. Unknown arguments are ignored
-rather than failing the call.
+pick an engine (`google`, `bing`, `bingcn`, `duckduckgo`, `yahoo`, `yandex`,
+`x`, `reddit`, `github`, `youtube`, `arxiv`, `wechat`, `bilibili`, `imdb`,
+`wikipedia`, `grokipedia`; news supports `google`, `bing`, `duckduckgo`,
+`yahoo`, and `hackernews`), return 1–50 results, request a later results page
+(only `bing`, `bingcn`, `baidu`, and `grokipedia` paginate), scope or exclude
+domains, and limit results to the past day, week, month, or year. Result page
+crawling is not exposed to the model. Unknown arguments are ignored rather than
+failing the call.
 
 Outputs preserve the API response, including optional publication dates,
-metadata, and content. Empty results remain empty. Ask the model to cite the
-returned links; these tools do not add AI SDK source events automatically.
+GitHub and Hacker News fields, metadata, and content. Empty results remain
+empty. Ask the model to cite the returned links; these tools do not add AI SDK
+source events automatically. When an answer uses `grokipedia` results, credit
+them as "Powered by xAI"; see
+[Improving search results](https://s1.dev/docs/guides/improving-search-results).
+
+## Agentic search with ask
+
+`ask` sends a natural-language request to
+[`POST /ask`](https://s1.dev/docs/basic/ask). Search1API chooses up to five
+engines and a time window, drops off-topic results, and returns at most 10
+results ranked by relevance. Each call costs 5 credits, so `ask` is not in the
+default tool set. Add it with `only` or `search1apiAsk()`:
+
+```ts
+import { search1apiAsk, search1apiTools } from '@search1api/ai-sdk';
+
+const tools = search1apiTools({ only: ['ask', 'crawl'] });
+// or: const tools = { ask: search1apiAsk(), ...search1apiTools() };
+```
+
+The SDK gives `ask` a 45-second timeout. `ask` is not available with
+pay-per-request payments. Prefer `search` when the agent already knows the
+engine and keywords.
 
 ## Configure one tool
 
@@ -141,7 +167,7 @@ To verify the current version from the public registry, run
 `node scripts/verify-package.mjs --registry` after publication.
 
 To validate a local build, create and install the tarball with
-`npm pack` and `npm install /absolute/path/search1api-ai-sdk-0.1.0.tgz`.
+`npm pack` and `npm install /absolute/path/search1api-ai-sdk-0.2.0.tgz`.
 Publication tracking is in [RELEASE.md](https://github.com/superagents-lab/search1api-ai-sdk/blob/main/RELEASE.md).
 
 ## License

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 2026-10-11
+
+- Add an opt-in `ask` tool for `POST /ask`, available through `search1apiAsk()` or `search1apiTools({ only: ['ask', ...] })`. It costs 5 credits per call, so the default tool set is unchanged.
+- `search` accepts the `bingcn`, `yandex`, and `grokipedia` engines and a `page` parameter, matching the Search1API MCP server 0.7.0.
+- `search` and `news` accept `time_range: "week"`.
+- Depend on `@search1api/client` 0.3.0, whose result types include `published_date` and the GitHub and Hacker News fields.
+
 ## 0.1.2 — 2026-10-08
 
 - Let the model choose search parameters, matching the Search1API MCP server: `search_service`, `max_results`, `include_sites`, `exclude_sites`, and `time_range`. Settings passed in code become defaults. Result page crawling (`crawlResults`) stays application-only.

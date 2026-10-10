@@ -8,6 +8,7 @@ import {
 } from '@search1api/client';
 import type { Tool } from 'ai';
 import {
+  search1apiAsk,
   search1apiCrawl,
   search1apiNews,
   search1apiSearch,
@@ -39,6 +40,23 @@ const crawlResponse = {
     link: 'https://ai-sdk.dev',
     content: 'Readable page content.',
   },
+};
+const askResponse = {
+  intent: {
+    keywords: 'bun 1.3',
+    sources: ['reddit', 'hackernews'],
+    time_range: 'month',
+  },
+  results: [
+    {
+      title: 'Bun 1.3 thread',
+      link: 'https://news.ycombinator.com/item?id=1',
+      snippet: 'Discussion',
+      source: 'hackernews',
+      relevance: 0.91,
+    },
+  ],
+  errors: [],
 };
 
 async function execute<Input, Output>(
@@ -192,14 +210,44 @@ describe('Search1API tools', () => {
     });
   });
 
+  it('passes the newer engines, page, and the week window through to the API', async () => {
+    const fetch = transport();
+    const tools = search1apiTools({ apiKey: 'test-key', fetch });
+    for (const engine of ['bingcn', 'yandex', 'grokipedia'] as const) {
+      await execute(tools.search, {
+        query: 'AI SDK',
+        search_service: engine,
+        page: 2,
+        time_range: 'week',
+      });
+    }
+    await execute(tools.news, { query: 'release', time_range: 'week' });
+    expect(
+      fetch.mock.calls.map((call) => JSON.parse(call[1]?.body as string))
+    ).toEqual([
+      ...['bingcn', 'yandex', 'grokipedia'].map((engine) => ({
+        query: 'AI SDK',
+        search_service: engine,
+        page: 2,
+        max_results: 10,
+        crawl_results: 0,
+        time_range: 'week',
+      })),
+      { query: 'release', max_results: 10, crawl_results: 0, time_range: 'week' },
+    ]);
+  });
+
   it('ignores unknown model arguments, including result crawling, instead of failing the tool call', async () => {
     const fetch = transport();
     const tools = search1apiTools({ apiKey: 'test-key', fetch });
     await execute(tools.search, {
       query: 'AI SDK',
       crawl_results: 3,
-      page: 2,
       image: true,
+    } as { query: string });
+    await execute(tools.news, {
+      query: 'release',
+      page: 2,
     } as { query: string });
     await execute(tools.crawl, {
       url: 'https://ai-sdk.dev',
@@ -211,6 +259,11 @@ describe('Search1API tools', () => {
       crawl_results: 0,
     });
     expect(JSON.parse(fetch.mock.calls[1][1]?.body as string)).toEqual({
+      query: 'release',
+      max_results: 10,
+      crawl_results: 0,
+    });
+    expect(JSON.parse(fetch.mock.calls[2][1]?.body as string)).toEqual({
       url: 'https://ai-sdk.dev',
     });
   });
@@ -274,11 +327,38 @@ describe('Search1API tools', () => {
     ).toBe('Bearer client-test-key');
   });
 
+  it('sends only the query to /ask and returns the response unchanged', async () => {
+    const fetch = transport(askResponse);
+    const result = await execute(search1apiAsk({ apiKey: 'test-key', fetch }), {
+      query: ' What are developers saying about Bun 1.3 this month? ',
+      max_results: 20,
+    } as { query: string });
+    expect(result).toEqual(askResponse);
+    expect(String(fetch.mock.calls[0][0])).toBe(
+      'https://api.search1api.com/ask'
+    );
+    expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toEqual({
+      query: 'What are developers saying about Bun 1.3 this month?',
+    });
+  });
+
+  it('rejects blank and over-long ask queries before any request', async () => {
+    const fetch = transport(askResponse);
+    const ask = search1apiAsk({ apiKey: 'test-key', fetch });
+    await expect(execute(ask, { query: '  ' })).rejects.toThrow();
+    await expect(execute(ask, { query: 'x'.repeat(501) })).rejects.toThrow();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('selects tools and rejects unknown names', () => {
     expect(Object.keys(search1apiTools())).toEqual(['search', 'news', 'crawl']);
     expect(Object.keys(search1apiTools({ only: ['search', 'crawl'] }))).toEqual(
       ['search', 'crawl']
     );
+    expect(Object.keys(search1apiTools({ only: ['ask', 'crawl'] }))).toEqual([
+      'ask',
+      'crawl',
+    ]);
     expect(Object.keys(search1apiTools({ only: [] }))).toEqual([]);
     // @ts-expect-error Invalid names are rejected at compile time and runtime.
     expect(() => search1apiTools({ only: ['missing'] })).toThrow(
@@ -287,6 +367,8 @@ describe('Search1API tools', () => {
     const selected = search1apiTools({ only: ['search'] });
     // @ts-expect-error Omitted tools are absent from the inferred type.
     void selected.crawl;
+    // @ts-expect-error ask is opt-in, so the default set does not include it.
+    void search1apiTools().ask;
   });
 
   it('rejects blank queries, out-of-range parameters, unsupported engines, and non-web URLs before any request', async () => {
@@ -295,6 +377,15 @@ describe('Search1API tools', () => {
     await expect(execute(tools.search, { query: '  ' })).rejects.toThrow();
     await expect(
       execute(tools.search, { query: 'AI SDK', max_results: 51 })
+    ).rejects.toThrow();
+    await expect(
+      execute(tools.search, { query: 'AI SDK', page: 0 })
+    ).rejects.toThrow();
+    await expect(
+      execute(tools.search, {
+        query: 'AI SDK',
+        search_service: 'sogou',
+      } as { query: string })
     ).rejects.toThrow();
     await expect(
       execute(tools.news, {

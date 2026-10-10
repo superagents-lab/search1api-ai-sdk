@@ -1,5 +1,6 @@
 import { Search1API } from '@search1api/client';
 import type {
+  AskResponse,
   CrawlOptions,
   CrawlResponse,
   NewsOptions,
@@ -32,14 +33,17 @@ export interface Search1APICrawlOptions extends Search1APIToolOptions {
 }
 
 export type CrawlInput = { url: string };
+export type AskInput = { query: string };
 
 // Model-facing parameters mirror the Search1API MCP server's tool schemas,
 // except result crawling, which only application settings can enable.
 const SEARCH_ENGINES = [
   'google',
   'bing',
+  'bingcn',
   'duckduckgo',
   'yahoo',
+  'yandex',
   'x',
   'reddit',
   'github',
@@ -49,6 +53,7 @@ const SEARCH_ENGINES = [
   'bilibili',
   'imdb',
   'wikipedia',
+  'grokipedia',
 ] as const;
 const NEWS_ENGINES = [
   'google',
@@ -90,7 +95,7 @@ function queryFields(kind: 'search' | 'news') {
           : 'News domains to exclude'
       ),
     time_range: z
-      .enum(['day', 'month', 'year'])
+      .enum(['day', 'week', 'month', 'year'])
       .optional()
       .describe(
         kind === 'search'
@@ -109,6 +114,15 @@ const searchSchema = z.object({
     .optional()
     .describe(
       "Search engine to use; choose one only when it matches the user's source intent"
+    ),
+  page: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe(
+      'Results page to fetch; only bing, bingcn, baidu, and grokipedia paginate, other engines ignore it'
     ),
 });
 
@@ -131,12 +145,23 @@ const crawlSchema = z.object({
     .describe('Public HTTP or HTTPS URL to retrieve'),
 });
 
+const askSchema = z.object({
+  query: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .describe(
+      'Natural-language description of what to find, including any platform or time frame'
+    ),
+});
+
 export type SearchInput = z.input<typeof searchSchema>;
 export type NewsInput = z.input<typeof newsSchema>;
 
 type ModelQueryInput =
   | z.output<typeof searchSchema>
-  | z.output<typeof newsSchema>;
+  | (z.output<typeof newsSchema> & { page?: undefined });
 
 // Merge model-supplied values over application defaults, dropping omitted keys.
 function requestOptions<Options extends SearchOptions | NewsOptions>(
@@ -149,6 +174,7 @@ function requestOptions<Options extends SearchOptions | NewsOptions>(
     includeSites: input.include_sites,
     excludeSites: input.exclude_sites,
     timeRange: input.time_range,
+    page: input.page,
   };
   const overrides = Object.fromEntries(
     Object.entries(fromModel).filter(([, value]) => value !== undefined)
@@ -242,6 +268,19 @@ function crawlTool(
   });
 }
 
+function askTool(getClient: ClientGetter): Tool<AskInput, AskResponse> {
+  return tool({
+    description:
+      'Describe what you need in natural language; Search1API chooses up to five engines and a time window, then returns at most 10 results ranked by relevance, with the engines and window it used. Costs 5 credits per call. Use search instead when you already know the engine and keywords.',
+    inputSchema: askSchema,
+    execute: async (input, { abortSignal }) => {
+      abortSignal?.throwIfAborted();
+      const { query } = askSchema.parse(input);
+      return getClient().ask(query, { signal: abortSignal });
+    },
+  });
+}
+
 export function search1apiSearch(
   options: Search1APISearchOptions = {}
 ): Tool<SearchInput, SearchResponse> {
@@ -260,10 +299,18 @@ export function search1apiCrawl(
   return crawlTool(clientGetter(options), options.crawl);
 }
 
+/** Agentic search through `POST /ask`. Not part of the default tool set. */
+export function search1apiAsk(
+  options: Search1APIToolOptions = {}
+): Tool<AskInput, AskResponse> {
+  return askTool(clientGetter(options));
+}
+
 export interface Search1APIToolSet {
   search: Tool<SearchInput, SearchResponse>;
   news: Tool<NewsInput, NewsResponse>;
   crawl: Tool<CrawlInput, CrawlResponse>;
+  ask: Tool<AskInput, AskResponse>;
 }
 
 export type Search1APIToolName = keyof Search1APIToolSet;
@@ -271,23 +318,30 @@ export type Search1APIToolName = keyof Search1APIToolSet;
 export interface Search1APIToolsOptions<
   Name extends Search1APIToolName = Search1APIToolName,
 > extends Search1APIToolOptions {
-  /** Include only these tools. By default all three are included. */
+  /**
+   * Include only these tools. By default `search`, `news`, and `crawl` are
+   * included; `ask` costs 5 credits per call and must be selected explicitly.
+   */
   only?: readonly Name[];
   search?: SearchOptions;
   news?: NewsOptions;
   crawl?: CrawlOptions;
 }
 
+const DEFAULT_TOOLS = ['search', 'news', 'crawl'] as const;
+type DefaultToolName = (typeof DEFAULT_TOOLS)[number];
+
 export function search1apiTools<
-  Name extends Search1APIToolName = Search1APIToolName,
+  Name extends Search1APIToolName = DefaultToolName,
 >(options: Search1APIToolsOptions<Name> = {}): Pick<Search1APIToolSet, Name> {
   const getClient = clientGetter(options);
   const tools: Search1APIToolSet = {
     search: searchTool(getClient, options.search),
     news: newsTool(getClient, options.news),
     crawl: crawlTool(getClient, options.crawl),
+    ask: askTool(getClient),
   };
-  const names = options.only ?? (['search', 'news', 'crawl'] as const);
+  const names = options.only ?? DEFAULT_TOOLS;
   const selected = {} as Pick<Search1APIToolSet, Name>;
   for (const name of names) {
     if (!Object.hasOwn(tools, name)) {
