@@ -89,3 +89,14 @@ Validated 2026-10-08 Asia/Shanghai against the local build before publication.
 - Before the change, the strict 0.1.1 schema rejected model-invented arguments
   (`max_results`, `page`, `crawl_results`, `include_sites`) in 2 of 7 runs,
   costing the agent a retry step.
+
+## 0.2.0: new engines, page, week, and ask
+
+Validated 2026-10-11 Asia/Shanghai against the local build before publication.
+
+- 20 unit tests, TypeScript checking, the mock-model smoke loop, and the AI SDK
+  5/6/7 x Zod 3/4 compatibility matrix passed.
+- Unit tests cover the request bodies for `bingcn`, `yandex`, `grokipedia`,
+  `page`, and `week`, and that `ask` sends only `query` to `/ask`.
+- No real-key agent runs: `ask` and the new engines were not called against the
+  live API from this package.

@@ -78,5 +78,5 @@ assert.deepEqual(requests.map((request) => request.path), ['/search', '/crawl', 
 // Verify both entry points in the built artifact.
 const require = createRequire(import.meta.url);
 const cjs = require('../dist/index.cjs');
-assert.deepEqual(Object.keys(cjs.search1apiTools()), ['search', 'news', 'crawl']);
+assert.deepEqual(Object.keys(cjs.search1apiTools()), ['search', 'news', 'crawl', 'ask']);
 console.log('PASS: generateText, streamText, schema validation, ESM and CommonJS');
