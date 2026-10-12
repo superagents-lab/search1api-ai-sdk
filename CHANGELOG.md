@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-10-12
 
-- Verify search/news tools preserve the new nested engine metadata, including zero counts and top-level publication dates. No runtime response conversion is needed. Update the client dependency to its metadata release when publishing the next AI SDK package.
+- Verify search/news tools preserve the new nested engine metadata, including zero counts and top-level publication dates. No runtime response conversion is needed. Depend on `@search1api/client` ^0.4.0 for the nested metadata response types.
 
 ## 0.2.0 — 2026-10-11
 
