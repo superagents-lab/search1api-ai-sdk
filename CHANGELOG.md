@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Verify search/news tools preserve the new nested engine metadata, including zero counts and top-level publication dates. No runtime response conversion is needed. Update the client dependency to its metadata release when publishing the next AI SDK package.
+
 ## 0.2.0 — 2026-10-11
 
 - Add an `ask` tool for `POST /ask`, included in `search1apiTools()` by default like the MCP server's `ask` tool, and available alone through `search1apiAsk()`. Each call costs 5 credits; pass `only: ['search', 'news', 'crawl']` to keep the previous tool set.

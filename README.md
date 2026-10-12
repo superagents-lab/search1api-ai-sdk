@@ -54,7 +54,9 @@ crawling is not exposed to the model. Unknown arguments are ignored rather than
 failing the call.
 
 Outputs preserve the API response, including optional publication dates,
-GitHub and Hacker News fields, metadata, and content. Empty results remain
+engine-specific GitHub and Hacker News fields inside each result's optional
+`metadata`, and content. `published_date` remains at the result top level.
+The pending response correction removes the former top-level engine fields. Empty results remain
 empty. Ask the model to cite the returned links; these tools do not add AI SDK
 source events automatically. When an answer uses `grokipedia` results, credit
 them as "Powered by xAI"; see
