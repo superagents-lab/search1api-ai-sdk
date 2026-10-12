@@ -84,6 +84,21 @@ function transport(value: unknown = searchResponse) {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('Search1API tools', () => {
+  it.each(['search', 'news'] as const)('preserves nested result metadata from %s', async (name) => {
+    const response = {
+      ...searchResponse,
+      results: [{
+        ...searchResponse.results[0],
+        metadata: { num_comments: 0 },
+      }],
+    };
+    const tools = search1apiTools({ apiKey: 'test-key', fetch: transport(response) });
+    const result = name === 'search'
+      ? await execute(tools.search, { query: 'q' })
+      : await execute(tools.news, { query: 'q' });
+    expect(result).toEqual(response);
+  });
+
   it('can be defined without credentials or fetch and resolves credentials on first use', async () => {
     vi.stubEnv('SEARCH1API_API_KEY', '');
     vi.stubEnv('SEARCH1API_KEY', '');
